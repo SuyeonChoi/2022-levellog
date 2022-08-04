@@ -6,6 +6,7 @@
 </div>
 
 ## 팀원 🤝
+hihi
 
 | [로마](https://github.com/kbsat) | [페퍼](https://github.com/SuyeonChoi) | [알린](https://github.com/OzRagwort) | [릭](https://github.com/nailseong) | [이브](https://github.com/2yujeong) | [결](https://github.com/yunjin-kim) | [해리](https://github.com/jihyeok-um) |
 |:----------:|:----------:|:----------:|:----------:|:----------:|:----------:|:----------:|
