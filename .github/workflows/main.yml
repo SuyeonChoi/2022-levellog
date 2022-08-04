@@ -14,7 +14,6 @@ on:
 
 jobs:
   test:
-    if: ${{ github.event.label.name == '👩🏻‍💻 백엔드' }}
     runs-on: ubuntu-22.04 # 실행 환경 지정
 
     steps:
