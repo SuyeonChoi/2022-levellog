@@ -6,7 +6,6 @@ on:
     branches:
       - '*'
   pull_request: # 모든 브랜치에서 PR이 일어났을 때 github action 동작
-    types: [ labeled ]
     branches:
       - '*'
 
