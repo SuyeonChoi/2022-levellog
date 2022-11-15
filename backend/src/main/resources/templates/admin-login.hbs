@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>레벨로그 관리자 페이지</title>
+    <link rel="stylesheet" href="/css/login.css">
+</head>
+<body class="body">
+<main>
+    <div class="main">
+        <h1 class="centered">관리자 로그인</h1>
+        <form class="form" onsubmit="return adminLogin();">
+            <input type="password" name="password" placeholder="비밀번호" class="input" id="admin-password" autofocus>
+            <input type="button" class="ui-button" onclick="adminLogin()" value="로그인">
+        </form>
+    </div>
+</main>
+</body>
+<script src="/js/login.js"></script>
+</html>

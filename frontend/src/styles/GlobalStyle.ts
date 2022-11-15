@@ -1,17 +1,18 @@
 import { createGlobalStyle } from 'styled-components';
 
-import NanumFont from 'assets/fonts/NanumSquare_ac.woff';
+import NotoSans from 'assets/fonts/noto-sans-kr-v27-latin-regular.woff';
 
 const GlobalStyles = createGlobalStyle` 
   #root {
-    height: 100%;
+    min-height: 100vh;
+    height: max-content;
     width: 100%;
     margin: 0;
   }
 
   @font-face {
     font-family: "Font_Regular";
-    src: local("Font_test"), url(${NanumFont}) format('woff'); 
+    src: local("Font_test"), url(${NotoSans}) format('otf'); 
   }
 
   html, body, div, span, applet, object, iframe,
@@ -42,12 +43,15 @@ const GlobalStyles = createGlobalStyle`
   body {
     height: 100%;
     width: 100%;
-    background-color: #F1F1F1;
+    background-color: #FFFFFF;
     font-family: 'Font_Regular';
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     outline: 0;
     font-style: normal;
+    ::-webkit-scrollbar {
+      display: none
+    };
   }
 
   p {
@@ -92,6 +96,24 @@ const GlobalStyles = createGlobalStyle`
   input::-webkit-outer-spin-button,
   input::-webkit-inner-spin-button {
     -webkit-appearance: none;
+  }
+
+  :disabled {
+    cursor: inherit;
+  }
+
+  ::-webkit-scrollbar {
+    display: block;
+    width: 0.75rem;
+  }
+  ::-webkit-scrollbar-thumb {
+    background-color: #3E3E3E;
+    background-clip: padding-box;
+    border: 0.125rem solid transparent;
+    border-radius: 0.625rem;
+  }
+  ::-webkit-scrollbar-track {
+    background-color: #FFFFFF;
   }
 `;
 

@@ -1,55 +1,35 @@
-import { useNavigate, useParams } from 'react-router-dom';
-
 import styled from 'styled-components';
 
-import useLevellog from 'hooks/useLevellog';
+import useLevellogAdd from 'hooks/levellog/useLevellogAdd';
 
-import { MESSAGE, ROUTES_PATH } from 'constants/constants';
-
-import Button from 'components/@commons/Button';
-import ContentHeader from 'components/@commons/ContentHeader';
-import SubTitleLabel from 'components/@commons/Label';
-import UiEditor from 'components/@commons/UiEditor';
+import BottomBar from 'components/@commons/bottomBar/BottomBar';
+import UiEditor from 'components/@commons/markdownEditor/UiEditor';
 
 const LevellogAdd = () => {
-  const { levellogRef, onClickLevellogAddButton } = useLevellog();
-  const { teamId } = useParams();
-  const navigate = useNavigate();
-
-  const handleClickLevellogAddButton = () => {
-    if (typeof teamId === 'string') {
-      onClickLevellogAddButton({ teamId });
-
-      return;
-    }
-
-    alert(MESSAGE.WRONG_ACCESS);
-    navigate(ROUTES_PATH.HOME);
-  };
+  const { levellogRef, handleClickLevellogAddButton } = useLevellogAdd();
 
   return (
-    <>
-      <ContentHeader title={'레벨로그 작성'}>
-        <Button onClick={handleClickLevellogAddButton}>{'제출하기'}</Button>
-      </ContentHeader>
-      <S.Content>
-        <SubTitleLabel>Level Log</SubTitleLabel>
-        <UiEditor
-          needToolbar={true}
-          autoFocus={true}
-          height={'50rem'}
-          contentRef={levellogRef}
-          initialEditType={'markdown'}
-        />
-      </S.Content>
-    </>
+    <S.Container>
+      <UiEditor
+        needToolbar={true}
+        autoFocus={true}
+        contentRef={levellogRef}
+        initialEditType={'markdown'}
+      />
+      <BottomBar buttonText={'작성하기'} handleClickRightButton={handleClickLevellogAddButton} />
+    </S.Container>
   );
 };
 
 const S = {
-  Content: styled.main`
-    display: flex;
-    flex-direction: column;
+  Container: styled.main`
+    height: calc(100vh - 14.375rem);
+    @media (min-width: 1620px) {
+      padding: 1.25rem calc((100vw - 100rem) / 2) 0 calc((100vw - 100rem) / 2);
+    }
+    @media (max-width: 1620px) {
+      padding: 1.25rem 1.25rem 0 1.25rem;
+    }
   `,
 };
 

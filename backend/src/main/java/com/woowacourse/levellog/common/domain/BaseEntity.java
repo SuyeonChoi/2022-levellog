@@ -1,6 +1,7 @@
 package com.woowacourse.levellog.common.domain;
 
 import java.time.LocalDateTime;
+import java.util.Objects;
 import javax.persistence.Column;
 import javax.persistence.EntityListeners;
 import javax.persistence.GeneratedValue;
@@ -22,10 +23,27 @@ public abstract class BaseEntity {
     Long id;
 
     @CreatedDate
-    @Column(updatable = false, nullable = false)
+    @Column(columnDefinition = "DATETIME(6)", updatable = false, nullable = false)
     private LocalDateTime createdAt;
 
     @LastModifiedDate
-    @Column(nullable = false)
+    @Column(columnDefinition = "DATETIME(6)", nullable = false)
     private LocalDateTime updatedAt;
+
+    @Override
+    public boolean equals(final Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null) {
+            return false;
+        }
+        final BaseEntity that = (BaseEntity) o;
+        return Objects.equals(id, that.getId());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id);
+    }
 }

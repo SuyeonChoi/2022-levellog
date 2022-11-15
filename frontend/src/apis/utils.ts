@@ -1,18 +1,21 @@
-import { RequestType } from 'types';
+import { ShowSnackbarProps } from 'hooks/utils/useSnackbar';
 
-export const 엑세스토큰이없는경우헤더제거 = ({
-  accessToken,
-  method,
-  url,
-  headers,
-}: RequestType) => {
-  if (!accessToken) {
-    return {
-      accessToken,
-      method,
-      url,
-    };
+import { MESSAGE } from 'constants/constants';
+
+export const WrongAccessToken = ({ message, showSnackbar }: WrongAccessTokenProps) => {
+  if (message === MESSAGE.WRONG_TOKEN) {
+    showSnackbar({ message: MESSAGE.NEED_RE_LOGIN });
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('userId');
+    window.location.replace('/');
+
+    return false;
   }
 
-  return { accessToken, method, url, headers };
+  return true;
 };
+
+interface WrongAccessTokenProps {
+  message: string;
+  showSnackbar: ({ message }: ShowSnackbarProps) => void;
+}

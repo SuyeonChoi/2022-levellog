@@ -1,0 +1,14 @@
+package com.woowacourse.levellog.levellog.exception;
+
+import com.woowacourse.levellog.common.exception.LevellogException;
+import com.woowacourse.levellog.common.support.DebugMessage;
+import org.springframework.http.HttpStatus;
+
+public class InvalidLevellogException extends LevellogException {
+
+    private static final String CLIENT_MESSAGE = "잘못된 레벨로그 요청입니다.";
+
+    public InvalidLevellogException(final DebugMessage debugMessage) {
+        super(CLIENT_MESSAGE, debugMessage, HttpStatus.BAD_REQUEST);
+    }
+}

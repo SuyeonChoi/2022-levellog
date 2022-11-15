@@ -1,80 +1,171 @@
-import Login from 'pages/Login';
-import NotFound from 'pages/NotFound';
-import PreQuestionAdd from 'pages/PreQuestion/PreQuestionAdd';
-import PreQuestionEdit from 'pages/PreQuestion/PreQuestionEdit';
-import FeedbackAdd from 'pages/feedback/FeedbackAdd';
-import FeedbackList from 'pages/feedback/FeedbackList';
-import LevellogAdd from 'pages/levellogs/LevellogAdd';
-import LevellogEdit from 'pages/levellogs/LevellogEdit';
-import InterviewDetail from 'pages/teams/InterviewDetail';
-import InterviewTeamAdd from 'pages/teams/InterviewTeamAdd';
-import InterviewTeamEdit from 'pages/teams/InterviewTeamEdit';
-import InterviewTeams from 'pages/teams/InterviewTeams';
+import { lazy, Suspense } from 'react';
 
-import { ROUTES_PATH } from 'constants/constants';
+import Copyright from 'pages/Copyright';
+import Loading from 'pages/status/Loading';
 
+import { REQUIRE_AUTH, ROUTES_PATH, TEAM_STATUS } from 'constants/constants';
+
+import { MemberProvider } from 'contexts/memberContext';
 import Auth from 'routes/Auth';
+import AuthLogin from 'routes/AuthLogin';
+import TeamStatus from 'routes/TeamStatus';
+
+const Home = lazy(() => import('pages/Home'));
+const Login = lazy(() => import('pages/Login'));
+const FeedbackAdd = lazy(() => import('pages/feedback/FeedbackAdd'));
+const FeedbackEdit = lazy(() => import('pages/feedback/FeedbackEdit'));
+const Feedbacks = lazy(() => import('pages/feedback/Feedbacks'));
+const InterviewQuestions = lazy(() => import('pages/interviewQuestion/InterviewQuestions'));
+const LevellogAdd = lazy(() => import('pages/levellogs/LevellogAdd'));
+const LevellogEdit = lazy(() => import('pages/levellogs/LevellogEdit'));
+const PreQuestionAdd = lazy(() => import('pages/preQuestion/PreQuestionAdd'));
+const PreQuestionEdit = lazy(() => import('pages/preQuestion/PreQuestionEdit'));
+const Error = lazy(() => import('pages/status/Error'));
+const NotFound = lazy(() => import('pages/status/NotFound'));
+const InterviewDetail = lazy(() => import('pages/teams/InterviewDetail'));
+const InterviewTeamAdd = lazy(() => import('pages/teams/InterviewTeamAdd'));
+const InterviewTeamEdit = lazy(() => import('pages/teams/InterviewTeamEdit'));
+const InterviewQuestionSearch = lazy(
+  () => import('pages/interviewQuestion/InterviewQuestionSearch'),
+);
 
 export const routes = [
   {
-    element: <Auth needLogin={true} />,
+    element: <AuthLogin needLogin={true} />,
     children: [
       {
-        path: ROUTES_PATH.FEEDBACK_ROUTE,
-        element: <FeedbackList />,
-      },
-      {
-        path: ROUTES_PATH.FEEDBACK_ADD,
-        element: <FeedbackAdd />,
-      },
-      {
-        path: ROUTES_PATH.LEVELLOG_ADD_ROUTE,
-        element: <LevellogAdd />,
-      },
-      {
-        path: ROUTES_PATH.LEVELLOG_EDIT,
-        element: <LevellogEdit />,
-      },
-      {
         path: ROUTES_PATH.INTERVIEW_TEAMS_ADD,
-        element: <InterviewTeamAdd />,
-      },
-      {
-        path: ROUTES_PATH.PREQUESTION_ADD,
-        element: <PreQuestionAdd />,
-      },
-      {
-        path: ROUTES_PATH.PREQUESTION_EDIT,
-        element: <PreQuestionEdit />,
+        element: (
+          <MemberProvider>
+            <InterviewTeamAdd />
+          </MemberProvider>
+        ),
       },
       {
         path: ROUTES_PATH.INTERVIEW_TEAMS_EDIT,
-        element: <InterviewTeamEdit />,
+        element: (
+          <MemberProvider>
+            <Auth requireAuth={REQUIRE_AUTH.HOST}>
+              <TeamStatus allowedStatuses={[TEAM_STATUS.READY]}>
+                <InterviewTeamEdit />
+              </TeamStatus>
+            </Auth>
+          </MemberProvider>
+        ),
+      },
+      {
+        path: ROUTES_PATH.FEEDBACKS,
+        element: (
+          <Suspense fallback={<Loading />}>
+            <Auth requireAuth={REQUIRE_AUTH.IN_TEAM}>
+              <Suspense fallback={<Loading />}>
+                <Feedbacks />
+              </Suspense>
+            </Auth>
+          </Suspense>
+        ),
+      },
+      {
+        path: ROUTES_PATH.FEEDBACK_ADD,
+        element: (
+          <Suspense fallback={<Loading />}>
+            <Auth requireAuth={REQUIRE_AUTH.NOT_ME}>
+              <TeamStatus allowedStatuses={[TEAM_STATUS.READY, TEAM_STATUS.IN_PROGRESS]}>
+                <FeedbackAdd />
+              </TeamStatus>
+            </Auth>
+          </Suspense>
+        ),
+      },
+      {
+        path: ROUTES_PATH.FEEDBACK_EDIT,
+        element: (
+          <Suspense fallback={<Loading />}>
+            <Auth requireAuth={REQUIRE_AUTH.AUTHOR}>
+              <TeamStatus allowedStatuses={[TEAM_STATUS.IN_PROGRESS]}>
+                <FeedbackEdit />
+              </TeamStatus>
+            </Auth>
+          </Suspense>
+        ),
+      },
+
+      {
+        path: ROUTES_PATH.LEVELLOG_ADD,
+        element: (
+          <Auth requireAuth={REQUIRE_AUTH.IN_TEAM}>
+            <TeamStatus allowedStatuses={[TEAM_STATUS.READY]}>
+              <LevellogAdd />
+            </TeamStatus>
+          </Auth>
+        ),
+      },
+      {
+        path: ROUTES_PATH.LEVELLOG_EDIT,
+        element: (
+          <Auth requireAuth={REQUIRE_AUTH.AUTHOR}>
+            <TeamStatus allowedStatuses={[TEAM_STATUS.READY]}>
+              <LevellogEdit />
+            </TeamStatus>
+          </Auth>
+        ),
+      },
+      {
+        path: ROUTES_PATH.PREQUESTION_ADD,
+        element: (
+          <Auth requireAuth={REQUIRE_AUTH.NOT_ME}>
+            <PreQuestionAdd />
+          </Auth>
+        ),
+      },
+      {
+        path: ROUTES_PATH.PREQUESTION_EDIT,
+        element: (
+          <Auth requireAuth={REQUIRE_AUTH.AUTHOR}>
+            <PreQuestionEdit />
+          </Auth>
+        ),
+      },
+      {
+        path: ROUTES_PATH.INTERVIEW_QUESTION,
+        element: <InterviewQuestions />,
       },
     ],
   },
   {
-    element: <Auth needLogin={false} />,
+    element: <AuthLogin needLogin={false} />,
     children: [
       {
         path: ROUTES_PATH.HOME,
-        element: <InterviewTeams />,
+        element: <Home />,
+      },
+      {
+        path: ROUTES_PATH.INTERVIEW_QUESTION_SEARCH,
+        element: <InterviewQuestionSearch />,
       },
       {
         path: ROUTES_PATH.LOGIN,
         element: <Login />,
       },
       {
-        path: ROUTES_PATH.INTERVIEW_TEAMS,
-        element: <InterviewTeams />,
+        path: ROUTES_PATH.INTERVIEW_TEAMS_DETAIL,
+        element: (
+          <Suspense fallback={<Loading />}>
+            <InterviewDetail />
+          </Suspense>
+        ),
       },
       {
-        path: ROUTES_PATH.INTERVIEW_TEAMS_DETAIL,
-        element: <InterviewDetail />,
+        path: ROUTES_PATH.ERROR,
+        element: <Error />,
       },
       {
         path: '*',
         element: <NotFound />,
+      },
+      {
+        path: ROUTES_PATH.COPYRIGHT,
+        element: <Copyright />,
       },
     ],
   },

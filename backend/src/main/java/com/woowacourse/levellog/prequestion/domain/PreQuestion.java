@@ -2,11 +2,13 @@ package com.woowacourse.levellog.prequestion.domain;
 
 import com.woowacourse.levellog.common.domain.BaseEntity;
 import com.woowacourse.levellog.common.exception.InvalidFieldException;
-import com.woowacourse.levellog.common.exception.UnauthorizedException;
+import com.woowacourse.levellog.common.support.DebugMessage;
 import com.woowacourse.levellog.levellog.domain.Levellog;
-import com.woowacourse.levellog.member.domain.Member;
+import com.woowacourse.levellog.levellog.exception.InvalidLevellogException;
+import com.woowacourse.levellog.member.exception.MemberNotAuthorException;
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.ForeignKey;
 import javax.persistence.JoinColumn;
 import javax.persistence.Lob;
@@ -20,34 +22,34 @@ import lombok.NoArgsConstructor;
 @Getter
 public class PreQuestion extends BaseEntity {
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(nullable = false, foreignKey = @ForeignKey(name = "fk_pre_question_levellog"))
     private Levellog levellog;
 
-    @ManyToOne
-    @JoinColumn(nullable = false, foreignKey = @ForeignKey(name = "fk_pre_question_from_member"))
-    private Member author;
+    @Column(nullable = false)
+    private Long authorId;
 
     @Column(nullable = false)
     @Lob
     private String content;
 
-    public PreQuestion(final Levellog levellog, final Member author, final String content) {
-        validateSelfPreQuestion(levellog, author);
+    public PreQuestion(final Levellog levellog, final Long authorId, final String content) {
+        validateSelfPreQuestion(levellog, authorId);
         validateContent(content);
 
         this.levellog = levellog;
-        this.author = author;
+        this.authorId = authorId;
         this.content = content;
     }
 
-    private void validateSelfPreQuestion(final Levellog levellog, final Member member) {
-        levellog.validateSelfPreQuestion(member);
+    private void validateSelfPreQuestion(final Levellog levellog, final Long memberId) {
+        levellog.validateSelfPreQuestion(memberId);
     }
 
     private void validateContent(final String content) {
         if (content == null || content.isBlank()) {
-            throw new InvalidFieldException("사전 내용은 공백이나 null일 수 없습니다.");
+            throw new InvalidFieldException("사전 내용은 공백이나 null일 수 없습니다.", DebugMessage.init()
+                    .append("content", content));
         }
     }
 
@@ -57,25 +59,28 @@ public class PreQuestion extends BaseEntity {
         this.content = content;
     }
 
-    public boolean isSameLevellog(final Levellog levellog) {
+    private boolean isSameLevellog(final Levellog levellog) {
         return this.levellog.equals(levellog);
     }
 
-    public boolean isSameAuthor(final Member member) {
-        return author.equals(member);
+    public boolean isSameAuthor(final Long memberId) {
+        return authorId.equals(memberId);
     }
 
     public void validateLevellog(final Levellog levellog) {
         if (!isSameLevellog(levellog)) {
-            throw new InvalidFieldException(
-                    "입력한 levellogId와 사전 질문의 levellogId가 다릅니다. 입력한 levellogId : " + levellog.getId());
+            throw new InvalidLevellogException(DebugMessage.init()
+                    .append("Feedback's levellogId'", this.levellog.getId())
+                    .append("Input levellogId", levellog.getId()));
         }
     }
 
-    public void validateMyQuestion(final Member member) {
-        if (!isSameAuthor(member)) {
-            throw new UnauthorizedException(
-                    "자신의 사전 질문이 아닙니다. 사전 질문 id = " + this.getId() + ", 멤버 id = " + member.getId());
+    public void validateMyQuestion(final Long memberId) {
+        if (!isSameAuthor(memberId)) {
+            throw new MemberNotAuthorException(DebugMessage.init()
+                    .append("loginMemberId", memberId)
+                    .append("authorMemberId", authorId)
+                    .append("preQuestionId", getId()));
         }
     }
 }

@@ -1,30 +1,16 @@
-import { useEffect } from 'react';
+import useTeamEdit from 'hooks/team/useTeamEdit';
 
-import { useTeam } from 'hooks/useTeams';
-
-import Button from 'components/@commons/Button';
-import ContentHeader from 'components/@commons/ContentHeader';
-import TeamEditForm from 'components/teams/TeamEditForm';
+import TeamForm from 'components/teams/TeamForm';
 
 const InterviewTeamEdit = () => {
-  const { teamInfoRef, getTeamOnRef, team, onSubmitTeamEditForm } = useTeam();
-
-  const handleSubmitTeamEditForm = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    onSubmitTeamEditForm();
-  };
-
-  useEffect(() => {
-    getTeamOnRef();
-  }, []);
+  const { teamInfoRef, handleClickTeamEditButton } = useTeamEdit();
 
   return (
-    <form onSubmit={handleSubmitTeamEditForm}>
-      <ContentHeader title={'인터뷰 팀 수정하기'}>
-        <Button type={'submit'}>수정하기</Button>
-      </ContentHeader>
-      <TeamEditForm teamInfoRef={teamInfoRef} />
-    </form>
+    <TeamForm
+      purpose={'수정하기'}
+      teamInfoRef={teamInfoRef}
+      handleClickTeamButton={handleClickTeamEditButton}
+    />
   );
 };
 

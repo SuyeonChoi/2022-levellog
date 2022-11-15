@@ -1,53 +1,65 @@
-import axios, { AxiosPromise } from 'axios';
+import { fetcher } from 'apis';
 
-import { PreQuestionApiType, PreQuestionFormatType } from 'types/preQuestion';
+import { AuthorizationHeader } from 'apis/index';
+import { PreQuestionInfoType } from 'types/preQuestion';
 
-export const requestGetPreQuestion = ({
+export const requestGetPreQuestion = async ({
   accessToken,
   levellogId,
-}: Pick<PreQuestionApiType, 'accessToken' | 'levellogId'>): AxiosPromise<PreQuestionFormatType> => {
-  return axios({
-    method: 'get',
-    url: `${process.env.API_URI}/levellogs/${levellogId}/pre-questions/my`,
-    headers: { Authorization: `Bearer ${accessToken}` },
-  });
+}: PreQuestionRequestCommonType): Promise<PreQuestionInfoType> => {
+  const preQuestionGetUri = `/levellogs/${levellogId}/pre-questions/my`;
+
+  const { data } = await fetcher.get(preQuestionGetUri, AuthorizationHeader(accessToken));
+
+  return data;
 };
 
-export const requestPostPreQuestion = ({
+export const requestPostPreQuestion = async ({
   accessToken,
   levellogId,
-  preQuestion,
-}: Omit<PreQuestionApiType, 'preQuestionId'>): AxiosPromise<void> => {
-  return axios({
-    method: 'post',
-    url: `${process.env.API_URI}/levellogs/${levellogId}/pre-questions`,
-    headers: { Authorization: `Bearer ${accessToken}` },
-    data: { preQuestion },
-  });
+  preQuestionContent,
+}: PreQuestionPostRequestType) => {
+  const preQuestionPostUri = `/levellogs/${levellogId}/pre-questions`;
+  const data = { content: preQuestionContent };
+
+  await fetcher.post(preQuestionPostUri, data, AuthorizationHeader(accessToken));
 };
 
-export const requestDeletePreQuestion = ({
-  accessToken,
-  levellogId,
-  preQuestionId,
-}: Omit<PreQuestionApiType, 'preQuestion'>) => {
-  return axios({
-    method: 'delete',
-    url: `${process.env.API_URI}/levellogs/${levellogId}/pre-questions/${preQuestionId}`,
-    headers: { Authorization: `Bearer ${accessToken}` },
-  });
-};
-
-export const requestEditPreQuestion = ({
+export const requestEditPreQuestion = async ({
   accessToken,
   levellogId,
   preQuestionId,
-  preQuestion,
-}: PreQuestionApiType) => {
-  return axios({
-    method: 'put',
-    url: `${process.env.API_URI}/levellogs/${levellogId}/pre-questions/${preQuestionId}`,
-    headers: { Authorization: `Bearer ${accessToken}` },
-    data: { preQuestion },
-  });
+  preQuestionContent,
+}: PreQuestionEditRequestType) => {
+  const preQuestionPutUri = `/levellogs/${levellogId}/pre-questions/${preQuestionId}`;
+  const data = { content: preQuestionContent };
+
+  await fetcher.put(preQuestionPutUri, data, AuthorizationHeader(accessToken));
 };
+
+export const requestDeletePreQuestion = async ({
+  accessToken,
+  levellogId,
+  preQuestionId,
+}: PreQuestionDeleteRequestType) => {
+  const preQuestionDeleteUri = `/levellogs/${levellogId}/pre-questions/${preQuestionId}`;
+
+  await fetcher.delete(preQuestionDeleteUri, AuthorizationHeader(accessToken));
+};
+
+interface PreQuestionRequestCommonType {
+  accessToken: string | null;
+  levellogId: string | undefined;
+}
+
+export interface PreQuestionDeleteRequestType extends PreQuestionRequestCommonType {
+  preQuestionId: string | undefined;
+}
+
+export interface PreQuestionPostRequestType extends PreQuestionRequestCommonType {
+  preQuestionContent: string;
+}
+
+export interface PreQuestionEditRequestType extends PreQuestionPostRequestType {
+  preQuestionId: string | undefined;
+}

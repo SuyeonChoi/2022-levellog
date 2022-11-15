@@ -1,75 +1,62 @@
 import { useEffect } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 import axios, { AxiosResponse } from 'axios';
 
 import useUser from 'hooks/useUser';
+import useSnackbar from 'hooks/utils/useSnackbar';
 
 import { ROUTES_PATH } from 'constants/constants';
 
-import { requestGetUserAuthority, requestGetUserLogin } from 'apis/login';
+import Loading from './status/Loading';
+import { requestGetUserAuthority, requestPostUserLogin } from 'apis/login';
+import { WrongAccessToken } from 'apis/utils';
 
 const Login = () => {
+  const { loginUserId } = useUser();
   const { userInfoDispatch } = useUser();
-  const location = useLocation() as unknown as { state: { pathname: string } };
+  const { showSnackbar } = useSnackbar();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const loginGithub = async () => {
-      const params = new URL(window.location.href).searchParams;
-      const code = params.get('code');
-      const accessToken = localStorage.getItem('accessToken');
-      try {
-        if (accessToken) {
-          const res = await requestGetUserAuthority({ accessToken });
-          userInfoDispatch({
-            id: res.data.id,
-            nickname: res.data.nickname,
-            profileUrl: res.data.profileUrl,
-          });
-          navigate(location.state.pathname);
+  const loginGithub = async () => {
+    const params = new URL(window.location.href).searchParams;
+    const code = params.get('code');
+    const accessToken = localStorage.getItem('accessToken');
 
-          return;
-        }
+    try {
+      if (accessToken && loginUserId) {
+        window.location.replace('/');
+      }
 
-        if (code) {
-          const res = await requestGetUserLogin({ code });
-          localStorage.setItem('accessToken', res.data.accessToken);
-          userInfoDispatch({
-            id: res.data.id,
-            nickname: res.data.nickname,
-            profileUrl: res.data.profileUrl,
-          });
-        }
+      if (code) {
+        const res = await requestPostUserLogin({ code });
+        const resLogin = await requestGetUserAuthority({ accessToken: res.data.accessToken });
 
-        if (location.state) {
-          if (location.state.pathname === ROUTES_PATH.LOGIN) {
-            navigate(location.state.pathname);
+        localStorage.setItem('accessToken', res.data.accessToken);
+        localStorage.setItem('userId', res.data.id);
+        userInfoDispatch({
+          id: resLogin.data.id,
+          nickname: resLogin.data.nickname,
+          profileUrl: resLogin.data.profileUrl,
+        });
+      }
 
-            return;
-          }
-          navigate(location.state.pathname);
-
-          return;
-        }
-
-        navigate(ROUTES_PATH.HOME);
-      } catch (err: unknown) {
-        if (axios.isAxiosError(err)) {
-          const responseBody: AxiosResponse = err.response!;
-          if (err instanceof Error) {
-            localStorage.removeItem('accessToken');
-            alert(responseBody.data.message);
-            navigate(ROUTES_PATH.HOME);
-          }
+      navigate(ROUTES_PATH.HOME, { replace: true });
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err) && err instanceof Error) {
+        const responseBody: AxiosResponse = err.response!;
+        if (WrongAccessToken({ message: responseBody.data.message, showSnackbar })) {
+          showSnackbar({ message: responseBody.data.message });
         }
       }
-    };
+    }
+  };
 
+  useEffect(() => {
     loginGithub();
   }, []);
 
-  return <h1>로그인 중</h1>;
+  return <Loading />;
 };
 
 export default Login;

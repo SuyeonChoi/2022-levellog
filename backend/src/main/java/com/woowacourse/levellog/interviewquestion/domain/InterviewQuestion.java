@@ -2,11 +2,12 @@ package com.woowacourse.levellog.interviewquestion.domain;
 
 import com.woowacourse.levellog.common.domain.BaseEntity;
 import com.woowacourse.levellog.common.exception.InvalidFieldException;
-import com.woowacourse.levellog.common.exception.UnauthorizedException;
+import com.woowacourse.levellog.common.support.DebugMessage;
 import com.woowacourse.levellog.levellog.domain.Levellog;
-import com.woowacourse.levellog.member.domain.Member;
+import com.woowacourse.levellog.member.exception.MemberNotAuthorException;
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.ForeignKey;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
@@ -21,52 +22,60 @@ public class InterviewQuestion extends BaseEntity {
 
     private static final int DEFAULT_STRING_SIZE = 255;
 
-    @ManyToOne
-    @JoinColumn(nullable = false, foreignKey = @ForeignKey(name = "fk_interview_question_author_member"))
-    private Member author;
+    @Column(nullable = false)
+    private Long authorId;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(nullable = false, foreignKey = @ForeignKey(name = "fk_interview_question_levellog"))
     private Levellog levellog;
 
     @Column(nullable = false)
     private String content;
 
-    private InterviewQuestion(final Member author, final Levellog levellog, final String content) {
+    @Column(nullable = false)
+    private int likeCount = 0;
+
+    public InterviewQuestion(final Long authorId, final Levellog levellog, final String content) {
         validateContent(content);
 
-        this.author = author;
+        this.authorId = authorId;
         this.levellog = levellog;
         this.content = content;
     }
 
-    public static InterviewQuestion of(final Member author, final Levellog levellog,
-                                       final String content) {
-        return new InterviewQuestion(author, levellog, content);
-    }
-
     private void validateContent(final String content) {
         if (content == null || content.isBlank()) {
-            throw new InvalidFieldException("인터뷰 질문은 공백이나 null일 수 없습니다.");
+            throw new InvalidFieldException("인터뷰 질문은 공백이나 null일 수 없습니다.", DebugMessage.init()
+                    .append("content", content));
         }
         if (content.length() > DEFAULT_STRING_SIZE) {
-            throw new InvalidFieldException("인터뷰 질문은 " + DEFAULT_STRING_SIZE + "자 이하여야합니다. 현재 길이:" + content.length());
+            throw new InvalidFieldException("인터뷰 질문은 " + DEFAULT_STRING_SIZE + "자 이하여야합니다.", DebugMessage.init()
+                    .append("content 길이", content.length()));
         }
     }
 
-    public void validateInterviewQuestionAuthor(final Member member, final String errorMessage) {
-        final boolean isNotAuthor = !author.equals(member);
+    public void validateMemberIsAuthor(final Long memberId) {
+        final boolean isNotAuthor = !authorId.equals(memberId);
         if (isNotAuthor) {
-            throw new UnauthorizedException(
-                    errorMessage + " 로그인 memberId : " + member.getId() + " 인터뷰 질문 작성자 memberId  : " + author.getId()
-                            + " 인터뷰 질문 id : " + getId() + " levellogId : " + levellog.getId());
+            throw new MemberNotAuthorException(DebugMessage.init()
+                    .append("loginMemberId", memberId)
+                    .append("authorMemberId", authorId)
+                    .append("interviewQuestionId", getId()));
         }
     }
 
-    public void updateContent(final String content, final Member member) {
+    public void updateContent(final String content, final Long memberId) {
         validateContent(content);
-        validateInterviewQuestionAuthor(member, "인터뷰 질문을 수정할 수 있는 권한이 없습니다.");
+        validateMemberIsAuthor(memberId);
 
         this.content = content;
+    }
+
+    public void upLike() {
+        this.likeCount++;
+    }
+
+    public void downLike() {
+        this.likeCount--;
     }
 }

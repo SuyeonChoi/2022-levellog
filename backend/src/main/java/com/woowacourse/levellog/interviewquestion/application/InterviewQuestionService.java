@@ -1,20 +1,31 @@
 package com.woowacourse.levellog.interviewquestion.application;
 
-import com.woowacourse.levellog.common.exception.UnauthorizedException;
+import com.woowacourse.levellog.authentication.support.Verified;
+import com.woowacourse.levellog.common.dto.LoginStatus;
+import com.woowacourse.levellog.common.support.DebugMessage;
 import com.woowacourse.levellog.interviewquestion.domain.InterviewQuestion;
+import com.woowacourse.levellog.interviewquestion.domain.InterviewQuestionLikes;
+import com.woowacourse.levellog.interviewquestion.domain.InterviewQuestionLikesRepository;
+import com.woowacourse.levellog.interviewquestion.domain.InterviewQuestionQueryRepository;
 import com.woowacourse.levellog.interviewquestion.domain.InterviewQuestionRepository;
-import com.woowacourse.levellog.interviewquestion.dto.InterviewQuestionDto;
-import com.woowacourse.levellog.interviewquestion.dto.InterviewQuestionsDto;
-import com.woowacourse.levellog.interviewquestion.exception.InterviewQuestionNotFoundException;
+import com.woowacourse.levellog.interviewquestion.domain.InterviewQuestionSort;
+import com.woowacourse.levellog.interviewquestion.dto.query.InterviewQuestionQueryResult;
+import com.woowacourse.levellog.interviewquestion.dto.query.InterviewQuestionSearchQueryResult;
+import com.woowacourse.levellog.interviewquestion.dto.query.InterviewQuestionSearchQueryResults;
+import com.woowacourse.levellog.interviewquestion.dto.request.InterviewQuestionWriteRequest;
+import com.woowacourse.levellog.interviewquestion.dto.response.InterviewQuestionContentResponse;
+import com.woowacourse.levellog.interviewquestion.dto.response.InterviewQuestionContentResponses;
+import com.woowacourse.levellog.interviewquestion.dto.response.InterviewQuestionResponse;
+import com.woowacourse.levellog.interviewquestion.dto.response.InterviewQuestionResponses;
+import com.woowacourse.levellog.interviewquestion.exception.InterviewQuestionLikeNotFoundException;
+import com.woowacourse.levellog.interviewquestion.exception.InterviewQuestionLikesAlreadyExistException;
 import com.woowacourse.levellog.levellog.domain.Levellog;
 import com.woowacourse.levellog.levellog.domain.LevellogRepository;
-import com.woowacourse.levellog.levellog.exception.LevellogNotFoundException;
-import com.woowacourse.levellog.member.domain.Member;
-import com.woowacourse.levellog.member.domain.MemberRepository;
-import com.woowacourse.levellog.member.exception.MemberNotFoundException;
-import com.woowacourse.levellog.team.domain.ParticipantRepository;
 import com.woowacourse.levellog.team.domain.Team;
+import com.woowacourse.levellog.team.support.TimeStandard;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,72 +36,131 @@ import org.springframework.transaction.annotation.Transactional;
 public class InterviewQuestionService {
 
     private final InterviewQuestionRepository interviewQuestionRepository;
-    private final MemberRepository memberRepository;
+    private final InterviewQuestionQueryRepository interviewQuestionQueryRepository;
+    private final InterviewQuestionLikesRepository interviewQuestionLikesRepository;
     private final LevellogRepository levellogRepository;
-    private final ParticipantRepository participantRepository;
+    private final TimeStandard timeStandard;
 
     @Transactional
-    public Long save(final InterviewQuestionDto request, final Long levellogId, final Long fromMemberId) {
-        final Member fromMember = getMember(fromMemberId);
-        final Levellog levellog = getLevellog(levellogId);
-        validateTeamMember(fromMember, levellog);
+    public Long save(final InterviewQuestionWriteRequest request, final Long levellogId,
+                     @Verified final LoginStatus loginStatus) {
+        final Levellog levellog = levellogRepository.getLevellog(levellogId);
+        final Team team = levellog.getTeam();
 
-        final InterviewQuestion interviewQuestion = request.toInterviewQuestion(fromMember, levellog);
+        levellog.validateSelfInterviewQuestion(loginStatus.getMemberId());
+        team.validateIsParticipants(loginStatus.getMemberId());
+        team.validateInProgress(timeStandard.now());
 
+        final InterviewQuestion interviewQuestion = request.toEntity(loginStatus.getMemberId(), levellog);
         return interviewQuestionRepository.save(interviewQuestion)
                 .getId();
     }
 
-    public InterviewQuestionsDto findAllByLevellogAndAuthor(final Long levellogId, final Long fromMemberId) {
-        final Levellog levellog = getLevellog(levellogId);
-        final Member fromMember = getMember(fromMemberId);
-        final List<InterviewQuestion> interviewQuestions = interviewQuestionRepository.findAllByLevellogAndAuthor(
-                levellog, fromMember);
+    public InterviewQuestionResponses findAllByLevellog(final Long levellogId) {
+        final Levellog levellog = levellogRepository.getLevellog(levellogId);
+        final List<InterviewQuestionResponse> interviewQuestions = interviewQuestionQueryRepository.findAllByLevellog(
+                        levellog)
+                .stream()
+                .collect(Collectors.groupingBy(
+                                InterviewQuestionQueryResult::getAuthor,
+                                LinkedHashMap::new,
+                                Collectors.mapping(InterviewQuestionQueryResult::getContent, Collectors.toList())
+                        )
+                ).entrySet()
+                .stream()
+                .map(it -> new InterviewQuestionResponse(it.getKey(), it.getValue()))
+                .collect(Collectors.toList());
 
-        return InterviewQuestionsDto.from(interviewQuestions);
+        return new InterviewQuestionResponses(interviewQuestions);
+    }
+
+    public InterviewQuestionContentResponses findAllByLevellogAndAuthor(final Long levellogId,
+                                                                        @Verified final LoginStatus loginStatus) {
+        final Levellog levellog = levellogRepository.getLevellog(levellogId);
+        final List<InterviewQuestion> interviewQuestions = interviewQuestionRepository.findAllByLevellogAndAuthorId(
+                levellog, loginStatus.getMemberId());
+
+        return new InterviewQuestionContentResponses(interviewQuestions.stream()
+                .map(it -> new InterviewQuestionContentResponse(it.getId(), it.getContent()))
+                .collect(Collectors.toList()));
+    }
+
+    public InterviewQuestionSearchQueryResults searchByKeyword(final String keyword,
+                                                               @Verified final LoginStatus loginStatus,
+                                                               final Long size, final Long page, final String sort) {
+        final InterviewQuestionSort sortCondition = InterviewQuestionSort.valueOf(sort.toUpperCase());
+        final List<InterviewQuestionSearchQueryResult> results = interviewQuestionQueryRepository.searchByKeyword(
+                keyword,
+                loginStatus, size, page, sortCondition);
+
+        return new InterviewQuestionSearchQueryResults(results, page);
     }
 
     @Transactional
-    public void update(final InterviewQuestionDto request, final Long interviewQuestionId, final Long fromMemberId) {
-        final InterviewQuestion interviewQuestion = getInterviewQuestion(interviewQuestionId);
-        final Member fromMember = getMember(fromMemberId);
+    public void update(final InterviewQuestionWriteRequest request, final Long interviewQuestionId,
+                       @Verified final LoginStatus loginStatus) {
+        final InterviewQuestion interviewQuestion = interviewQuestionRepository.getInterviewQuestion(
+                interviewQuestionId);
 
-        interviewQuestion.updateContent(request.getInterviewQuestion(), fromMember);
+        interviewQuestion.getLevellog()
+                .getTeam()
+                .validateInProgress(timeStandard.now());
+
+        interviewQuestion.updateContent(request.getContent(), loginStatus.getMemberId());
     }
 
     @Transactional
-    public void deleteById(final Long interviewQuestionId, final Long fromMemberId) {
-        final InterviewQuestion interviewQuestion = getInterviewQuestion(interviewQuestionId);
-        final Member member = getMember(fromMemberId);
+    public void deleteById(final Long interviewQuestionId, @Verified final LoginStatus loginStatus) {
+        final InterviewQuestion interviewQuestion = interviewQuestionRepository.getInterviewQuestion(
+                interviewQuestionId);
 
-        interviewQuestion.validateInterviewQuestionAuthor(member, "인터뷰 질문을 삭제할 수 있는 권한이 없습니다.");
+        interviewQuestion.validateMemberIsAuthor(loginStatus.getMemberId());
+        interviewQuestion.getLevellog()
+                .getTeam()
+                .validateInProgress(timeStandard.now());
 
         interviewQuestionRepository.delete(interviewQuestion);
     }
 
-    private InterviewQuestion getInterviewQuestion(final Long interviewQuestionId) {
-        return interviewQuestionRepository.findById(interviewQuestionId)
-                .orElseThrow(() -> new InterviewQuestionNotFoundException(
-                        "존재하지 않는 인터뷰 질문 [interviewQuestionId : " + interviewQuestionId + "]"));
+    @Transactional
+    public void pressLike(final Long interviewQuestionId, @Verified final LoginStatus loginStatus) {
+        final InterviewQuestion interviewQuestion = interviewQuestionRepository.getInterviewQuestion(
+                interviewQuestionId);
+        validateAlreadyExist(interviewQuestionId, loginStatus.getMemberId());
+
+        interviewQuestionLikesRepository.save(
+                new InterviewQuestionLikes(interviewQuestion.getId(), loginStatus.getMemberId()));
+        interviewQuestion.upLike();
     }
 
-    private Levellog getLevellog(final Long levellogId) {
-        return levellogRepository.findById(levellogId)
-                .orElseThrow(() -> new LevellogNotFoundException("존재하지 않는 레벨로그 [levellogId : " + levellogId + "]"));
+    @Transactional
+    public void cancelLike(final Long interviewQuestionId, @Verified final LoginStatus loginStatus) {
+        final InterviewQuestion interviewQuestion = interviewQuestionRepository.getInterviewQuestion(
+                interviewQuestionId);
+        final InterviewQuestionLikes interviewQuestionLikes = getInterviewQuestionLikes(interviewQuestion,
+                loginStatus.getMemberId());
+
+        interviewQuestionLikesRepository.deleteById(interviewQuestionLikes.getId());
+        interviewQuestion.downLike();
     }
 
-    private Member getMember(final Long memberId) {
-        return memberRepository.findById(memberId)
-                .orElseThrow(() -> new MemberNotFoundException("존재하지 않는 멤버 [memberId : " + memberId + "]"));
+    private InterviewQuestionLikes getInterviewQuestionLikes(final InterviewQuestion interviewQuestion,
+                                                             final Long memberId) {
+        return interviewQuestionLikesRepository.findByInterviewQuestionIdAndLikerId(interviewQuestion.getId(),
+                        memberId)
+                .orElseThrow(() -> new InterviewQuestionLikeNotFoundException(
+                        DebugMessage.init()
+                                .append("interviewQuestionId", interviewQuestion.getId())
+                                .append("likerId", memberId)
+                ));
     }
 
-    private void validateTeamMember(final Member member, final Levellog levellog) {
-        final Team team = levellog.getTeam();
-
-        if (!participantRepository.existsByMemberAndTeam(member, team)) {
-            throw new UnauthorizedException(
-                    "같은 팀에 속한 멤버만 인터뷰 질문을 작성할 수 있습니다. [memberId :" + member.getId() + " teamId : " + team.getId()
-                            + " levellogId : " + levellog.getId() + "]");
+    private void validateAlreadyExist(final Long interviewQuestionId, final Long memberId) {
+        if (interviewQuestionLikesRepository.existsByInterviewQuestionIdAndLikerId(interviewQuestionId, memberId)) {
+            final DebugMessage debugMessage = DebugMessage.init()
+                    .append("interviewQuestionId", interviewQuestionId)
+                    .append("likerId", memberId);
+            throw new InterviewQuestionLikesAlreadyExistException(debugMessage);
         }
     }
 }

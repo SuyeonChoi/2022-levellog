@@ -1,30 +1,4 @@
-export interface TeamApiType {
-  teamId: string;
-  teamInfo: TeamCustomHookType;
-  accessToken: string | null;
-}
-
-export interface TeamEditApiType {
-  teamId: string;
-  teamInfo: Pick<TeamCustomHookType, 'title' | 'place' | 'startAt'>;
-  accessToken: string | null;
-}
-
-export interface TeamCustomHookType {
-  title: string;
-  place: string;
-  startAt: string;
-  interviewerNumber: string;
-  participants: {
-    ids: Array<string>;
-  };
-}
-
-export interface Team {
-  title: string;
-  place: string;
-  startAt: string;
-}
+import { ParticipantType } from 'types';
 
 export interface InterviewTeamType {
   id: string;
@@ -32,16 +6,34 @@ export interface InterviewTeamType {
   place: string;
   startAt: string;
   teamImage: string;
+  status: TeamStatusType;
+  participants: Pick<ParticipantType, 'memberId' | 'profileUrl' | 'nickname'>[];
+}
+
+export interface InterviewTeamDetailType extends InterviewTeamType {
   hostId: string;
-  isClosed: Boolean;
-  isParticipant: Boolean;
+  isParticipant: boolean;
+  interviewerNumber: number;
+  interviewers: Array<number | null>;
+  interviewees: Array<number | null>;
+  watchers: ParticipantType[];
   participants: ParticipantType[];
 }
 
-export interface ParticipantType {
-  memberId: string;
-  levellogId: string;
-  nickname: string;
-  profileUrl: string;
-  preQuestionId: string;
+export interface TeamRequestType {
+  title: string;
+  place: string;
+  startAt: string;
+  interviewerNumber: number;
+  watcherIds: string[];
+  participantIds: string[];
 }
+
+export interface TeamConditionsType {
+  open: boolean;
+  close: boolean;
+  my: boolean;
+}
+
+export type TeamStatusType = 'READY' | 'IN_PROGRESS' | 'CLOSED' | '';
+export type TeamsConditionType = 'open' | 'close' | 'my';

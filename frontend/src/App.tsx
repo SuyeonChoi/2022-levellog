@@ -1,38 +1,45 @@
+import { useContext, useState, Suspense } from 'react';
 import { useRoutes } from 'react-router-dom';
 
 import styled from 'styled-components';
 
+import SnackbarContainer from 'components/@commons/snackbar/SnackbarContainer';
 import Footer from 'components/Footer';
-import Header from 'components/Header';
+import Header from 'components/header/Header';
 import { routes } from 'routes/Routes';
 import GlobalStyles from 'styles/GlobalStyle';
 
 const App = () => {
   const content = useRoutes(routes);
+  const [prevPathname, setPrevPathname] = useState('');
+
+  if (location.pathname !== prevPathname) {
+    window.scrollTo(0, 0);
+    setPrevPathname(location.pathname);
+  }
 
   return (
-    <>
+    <Container>
       <GlobalStyles />
       <Header />
-      <PageContainer>{content}</PageContainer>
-      <Footer />
-    </>
+      <Suspense>
+        <PageContainer>{content}</PageContainer>
+        <SnackbarContainer />
+        <Footer />
+      </Suspense>
+    </Container>
   );
 };
 
-const PageContainer = styled.main`
-  overflow: auto;
-  overflow-x: hidden;
-  box-sizing: border-box;
-  width: 100%;
-  min-height: 65vh;
-  padding: 0 10rem;
-  @media (max-width: 1024px) {
-    padding: 0 5rem;
-  }
-  @media (max-width: 560px) {
-    padding: 0 2.5rem;
-  }
+const Container = styled.div`
+  display: flex;
+  flex-direction: column;
+  min-height: inherit;
+  height: inherit;
+`;
+
+const PageContainer = styled.div`
+  flex: 1;
 `;
 
 export default App;

@@ -2,43 +2,52 @@ import { Link } from 'react-router-dom';
 
 import styled from 'styled-components';
 
-import levellogLogo from 'assets/images/levellogLogo.png';
-
-import { LogoStyle } from 'components/@commons/Style';
+import { ROUTES_PATH } from 'constants/constants';
 
 const Footer = () => {
   return (
     <S.Container>
-      <S.Content>
-        <S.Title>@2022 Level Log</S.Title>
-        <Link to={'/'}>
-          <LogoStyle src={levellogLogo} alt={'레벨로그 로고'} />
-        </Link>
-      </S.Content>
+      <S.Title>@ 2022 LevelLog</S.Title>
+      <Link to={ROUTES_PATH.COPYRIGHT} aria-label={'저작권 정보 페이지로 이동'}>
+        <S.Content>저작권</S.Content>
+      </Link>
     </S.Container>
   );
 };
 
 const S = {
   Container: styled.footer`
-    width: 100%;
-    height: 9rem;
-    margin-top: 7.125rem;
-    border-top: 0.0625rem solid ${(props) => props.theme.default.BLACK};
-  `,
-
-  Content: styled.div`
+    bottom: 0;
     display: flex;
-    flex-direction: column;
-    justify-content: center;
+    justify-content: flex-start;
     align-items: center;
-    margin-top: 1rem;
+    width: 100%;
+    height: 4.375rem;
+    border-top: 0.125rem solid ${(props) => props.theme.default.LIGHT_GRAY};
+    background-color: ${(props) => props.theme.default.WHITE};
+    @media (min-width: 1620px) {
+      padding: 0 calc((100vw - 100rem) / 2);
+    }
+    @media (max-width: 1620px) {
+      padding: 0 1.25rem;
+    }
   `,
 
   Title: styled.p`
-    margin-bottom: 0.3125rem;
-    font-size: 1.25rem;
-    font-weight: 600;
+    margin-right: 0.625rem;
+    color: ${(props) => props.theme.default.DARK_GRAY};
+    font-size: 1rem;
+    font-weight: 500;
+  `,
+
+  Content: styled.p`
+    margin-right: 0.625rem;
+    color: ${(props) => props.theme.default.DARK_GRAY};
+    font-size: 1rem;
+    font-weight: 500;
+    &:hover {
+      border-bottom: 1px solid ${(props) => props.theme.default.DARK_GRAY};
+    }
   `,
 };
 

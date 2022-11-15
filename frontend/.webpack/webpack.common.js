@@ -1,37 +1,18 @@
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
-const Dotenv = require('dotenv-webpack');
-require('dotenv').config();
+const CopyWebpackPlugin = require('copy-webpack-plugin');
+
 module.exports = {
   entry: '../src/index.tsx',
   module: {
     rules: [
       {
-        test: /\.(ts|tsx)$/,
-        use: ['babel-loader', 'ts-loader'],
-      },
-      {
-        test: /\.(png|jpe?g|gif|svg)$/,
-        use: [
-          {
-            loader: 'file-loader',
-            options: {
-              name: 'assets/images/[name].[ext]',
-            },
-          },
-        ],
-      },
-      {
-        test: /\.(woff|woff2|eot|ttf|otf)$/,
-        use: [
-          {
-            loader: 'file-loader',
-            options: {
-              name: 'assets/fonts/[name].[ext]',
-            },
-          },
-        ],
+        test: /\.(png|jpe?g|svg|webp|woff)$/,
+        type: 'asset/resource',
+        generator: {
+          filename: '[hash][ext][query]',
+        },
       },
       {
         test: /\.css$/,
@@ -45,12 +26,14 @@ module.exports = {
   },
   output: {
     path: path.resolve(__dirname, '../dist'),
-    filename: 'bundle.js',
+    filename: '[name].[contenthash].js',
     publicPath: '/',
   },
   plugins: [
-    new Dotenv(),
-    new HtmlWebpackPlugin({ template: 'public/index.html' }),
+    new HtmlWebpackPlugin({
+      template: path.join('public/index.html'),
+      favicon: './src/assets/images/favicon.ico',
+    }),
     new CleanWebpackPlugin(),
   ],
 };

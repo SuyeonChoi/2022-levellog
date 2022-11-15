@@ -1,29 +1,54 @@
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 
 import styled from 'styled-components';
 
 import useUser from 'hooks/useUser';
 
-import { ROUTES_PATH } from 'constants/constants';
+import feedbackIcon from 'assets/images/feedbackIcon.svg';
+import interviewQuestionIcon from 'assets/images/interviewQuestionIcon.svg';
+import levellogIcon from 'assets/images/levellogIcon.svg';
+import preQuestionIcon from 'assets/images/preQuestionIcon.svg';
+import { GITHUB_AVATAR_SIZE_LIST, TEAM_STATUS } from 'constants/constants';
 
-import Button from 'components/@commons/Button';
-import Image from 'components/@commons/Image';
-import { LevellogParticipantType } from 'types/levellog';
-import { PreQuestionParticipantType } from 'types/preQuestion';
-import { ParticipantType } from 'types/team';
+import InterviewerButton from './InterviewerButton';
+import CustomLink from 'components/@commons/CustomLink';
+import Image from 'components/@commons/image/Image';
+import Role from 'components/@commons/role/Role';
+import VisibleButtonList from 'components/VisibleButtonList';
+import { ParticipantType } from 'types/index';
+import { TeamStatusType } from 'types/team';
+import {
+  feedbacksGetUriBuilder,
+  QuestionsGetUriBuilder,
+  levellogAddUriBuilder,
+  preQuestionAddUriBuilder,
+} from 'utils/uri';
 
 const Interviewer = ({
   participant,
+  interviewees,
+  interviewers,
+  teamStatus,
   userInTeam,
   onClickOpenLevellogModal,
   onClickOpenPreQuestionModal,
 }: InterviewerProps) => {
-  const { teamId } = useParams();
   const { loginUserId } = useUser();
+  const { teamId } = useParams();
+
+  const role = {
+    interviewee: false,
+    interviewer: false,
+  };
+
+  if (loginUserId) {
+    role.interviewee = interviewees.includes(Number(participant.memberId));
+    role.interviewer = interviewers.includes(Number(participant.memberId));
+  }
 
   const handleClickOpenLevellogModal = () => {
     if (typeof teamId === 'string') {
-      onClickOpenLevellogModal({ teamId, participant });
+      onClickOpenLevellogModal({ participant });
     }
   };
 
@@ -31,72 +56,115 @@ const Interviewer = ({
     onClickOpenPreQuestionModal({ participant });
   };
 
-  if (participant.memberId === loginUserId) {
-    return (
-      <S.Container>
-        <S.Profile>
-          <Image src={participant.profileUrl} sizes={'HUGE'} />
-          <S.Nickname>
-            <p>{participant.nickname}</p>
-          </S.Nickname>
-        </S.Profile>
-        <S.Content>
-          {participant.levellogId ? (
-            <>
-              <S.InterviewerButton onClick={handleClickOpenLevellogModal}>
-                레벨로그 보기
-              </S.InterviewerButton>
-              <Link to={`/teams/${teamId}/levellogs/${participant.levellogId}/feedbacks`}>
-                <S.InterviewerButton disabled={!participant.levellogId || !userInTeam}>
-                  피드백
-                </S.InterviewerButton>
-              </Link>
-            </>
-          ) : (
-            <Link to={`${ROUTES_PATH.LEVELLOG_ADD}/${teamId}`}>
-              <S.InterviewerButton>레벨로그 작성</S.InterviewerButton>
-            </Link>
-          )}
-        </S.Content>
-      </S.Container>
-    );
-  }
-
   return (
     <S.Container>
+      {role.interviewee && role.interviewer === false && <Role role={'인터뷰이'} />}
+      {role.interviewer && role.interviewee === false && <Role role={'인터뷰어'} />}
+      {role.interviewee && role.interviewer && <Role role={'상호 인터뷰'} />}
       <S.Profile>
-        <Image src={participant.profileUrl} sizes={'HUGE'} />
-        <S.Nickname>
-          <p>{participant.nickname}</p>
-        </S.Nickname>
+        <Image
+          src={participant.profileUrl}
+          sizes={'HUGE'}
+          githubAvatarSize={GITHUB_AVATAR_SIZE_LIST.HUGE}
+        />
+        <S.NicknameBox>
+          <S.Nickname>{participant.nickname}</S.Nickname>
+        </S.NicknameBox>
       </S.Profile>
       <S.Content>
-        <S.InterviewerButton
-          disabled={!participant.levellogId}
-          onClick={handleClickOpenLevellogModal}
-        >
-          레벨로그 보기
-        </S.InterviewerButton>
-
-        {participant.preQuestionId ? (
-          <S.InterviewerButton
-            disabled={!participant.levellogId || !userInTeam}
-            onClick={handleClickOpenPreQuestionModal}
+        <S.ButtonBox>
+          <VisibleButtonList
+            type={'levellogLook'}
+            interviewerId={participant.memberId}
+            loginUserId={loginUserId}
+            levellogId={participant.levellogId}
           >
-            사전 질문 보기
-          </S.InterviewerButton>
-        ) : (
-          <Link to={`/pre-questions/teams/${teamId}/levellog/${participant.levellogId}`}>
-            <S.InterviewerButton disabled={!participant.levellogId || !userInTeam}>
-              사전 질문 작성
-            </S.InterviewerButton>
-          </Link>
-        )}
-        <Link to={`/teams/${teamId}/levellogs/${participant.levellogId}/feedbacks`}>
-          <S.InterviewerButton disabled={!participant.levellogId || !userInTeam}>
-            피드백
-          </S.InterviewerButton>
-        </Link>
+            <InterviewerButton
+              isDisabled={!participant.levellogId}
+              buttonIcon={levellogIcon}
+              buttonText={'레벨로그 보기'}
+              onClick={handleClickOpenLevellogModal}
+            />
+          </VisibleButtonList>
+
+          <VisibleButtonList
+            type={'levellogWrite'}
+            interviewerId={participant.memberId}
+            loginUserId={loginUserId}
+            levellogId={participant.levellogId}
+          >
+            <CustomLink
+              path={levellogAddUriBuilder({ teamId })}
+              disabled={teamStatus !== TEAM_STATUS.READY}
+            >
+              <InterviewerButton
+                isDisabled={teamStatus !== TEAM_STATUS.READY}
+                buttonIcon={levellogIcon}
+                buttonText={'레벨로그 작성'}
+              />
+            </CustomLink>
+          </VisibleButtonList>
+
+          <VisibleButtonList
+            type={'QuestionLook'}
+            interviewerId={participant.memberId}
+            loginUserId={loginUserId}
+          >
+            <CustomLink
+              path={QuestionsGetUriBuilder({ teamId, levellogId: participant.levellogId })}
+              disabled={!participant.levellogId || !userInTeam}
+            >
+              <InterviewerButton
+                isDisabled={!participant.levellogId || !userInTeam}
+                buttonIcon={interviewQuestionIcon}
+                buttonText={'인터뷰질문 보기'}
+              />
+            </CustomLink>
+          </VisibleButtonList>
+
+          <VisibleButtonList
+            type={'preQuestionLook'}
+            interviewerId={participant.memberId}
+            loginUserId={loginUserId}
+            preQuestionId={participant.preQuestionId}
+          >
+            <InterviewerButton
+              isDisabled={!participant.levellogId || !userInTeam}
+              buttonIcon={preQuestionIcon}
+              buttonText={'사전질문 보기'}
+              onClick={handleClickOpenPreQuestionModal}
+            />
+          </VisibleButtonList>
+
+          <VisibleButtonList
+            type={'preQuestionWrite'}
+            interviewerId={participant.memberId}
+            loginUserId={loginUserId}
+            preQuestionId={participant.preQuestionId}
+          >
+            <CustomLink
+              path={preQuestionAddUriBuilder({ teamId, levellogId: participant.levellogId })}
+              disabled={!participant.levellogId || !userInTeam}
+            >
+              <InterviewerButton
+                isDisabled={!participant.levellogId || !userInTeam}
+                buttonIcon={preQuestionIcon}
+                buttonText={'사전질문 작성'}
+              />
+            </CustomLink>
+          </VisibleButtonList>
+
+          <CustomLink
+            path={feedbacksGetUriBuilder({ teamId, levellogId: participant.levellogId })}
+            disabled={!participant.levellogId || !userInTeam}
+          >
+            <InterviewerButton
+              isDisabled={!participant.levellogId || !userInTeam}
+              buttonIcon={feedbackIcon}
+              buttonText={'피드백 작성 / 보기'}
+            />
+          </CustomLink>
+        </S.ButtonBox>
       </S.Content>
     </S.Container>
   );
@@ -104,20 +172,23 @@ const Interviewer = ({
 
 interface InterviewerProps {
   participant: ParticipantType;
+  interviewees: Array<number | null>;
+  interviewers: Array<number | null>;
+  teamStatus: TeamStatusType;
   userInTeam: Boolean;
-  onClickOpenLevellogModal: ({ teamId, participant }: LevellogParticipantType) => void;
-  onClickOpenPreQuestionModal: ({ participant }: PreQuestionParticipantType) => void;
+  onClickOpenPreQuestionModal: ({ participant }: Record<'participant', ParticipantType>) => void;
+  onClickOpenLevellogModal: ({ participant }: Record<'participant', ParticipantType>) => void;
 }
 
 const S = {
   Container: styled.div`
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-    width: 15rem;
-    height: 18.75rem;
-    padding: 1.25rem 1.5rem 1.875rem 1.5rem;
-    border: 0.0625rem solid ${(props) => props.theme.default.BLACK};
+    position: relative;
+    width: 17.5rem;
+    height: 24rem;
+    padding: 1.25rem 2.125rem 0 2.125rem;
+    border-radius: 0.625rem;
+    background-color: ${(props) => props.theme.default.WHITE};
+    box-shadow: 0.0625rem 0.25rem 0.625rem ${(props) => props.theme.default.GRAY};
   `,
 
   Profile: styled.div`
@@ -127,17 +198,25 @@ const S = {
     margin: 0 auto;
   `,
 
-  Nickname: styled.div`
+  NicknameBox: styled.div`
     display: flex;
     justify-content: center;
     align-items: center;
     position: absolute;
-    top: 6.25rem;
-    left: 0.625rem;
-    width: 6.25rem;
-    height: 1.875rem;
-    border: 0.0625rem solid ${(props) => props.theme.default.BLACK};
+    top: 6.875rem;
+    left: -2.875rem;
+    width: 13.25rem;
+    height: 2.5rem;
+    border: 0.0625rem solid ${(props) => props.theme.default.GRAY};
     background-color: ${(props) => props.theme.default.WHITE};
+  `,
+
+  IconImage: styled(Image)`
+    border-radius: 0;
+  `,
+
+  Nickname: styled.p`
+    font-weight: 600;
   `,
 
   Content: styled.div`
@@ -146,11 +225,11 @@ const S = {
     gap: 1.125rem;
   `,
 
-  InterviewerButton: styled(Button)`
-    padding: 0;
-    background-color: ${(props) => props.theme.default.INVISIBLE};
-    font-size: 1.125rem;
-    font-weight: 400;
+  ButtonBox: styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 2.375rem;
   `,
 };
 

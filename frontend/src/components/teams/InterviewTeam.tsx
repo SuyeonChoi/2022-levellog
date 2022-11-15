@@ -1,78 +1,146 @@
+import { Link } from 'react-router-dom';
+
 import styled from 'styled-components';
 
-import FlexBox from 'components/@commons/FlexBox';
-import Image from 'components/@commons/Image';
-import { InterviewTeamType, ParticipantType } from 'types/team';
+import cancelIcon from 'assets/images/cancel.png';
+import checkIcon from 'assets/images/check.svg';
+import locationIcon from 'assets/images/location.svg';
+import { GITHUB_AVATAR_SIZE_LIST } from 'constants/constants';
 
-const InterviewTeam = ({
-  id,
-  teamImage,
-  hostId,
-  title,
-  place,
-  startAt,
-  participants,
-}: InterviewTeamType) => {
+import FlexBox from 'components/@commons/FlexBox';
+import Image from 'components/@commons/image/Image';
+import { InterviewTeamType } from 'types/team';
+import { teamGetUriBuilder } from 'utils/uri';
+import { convertDateAndTime } from 'utils/util';
+
+const InterviewTeam = ({ team }: InterviewTeamsProp) => {
+  const { id, teamImage, title, status, place, startAt, participants } = team;
+  const DateAndTime = convertDateAndTime(startAt);
+
   return (
-    <S.Container id={id}>
-      <FlexBox gap={0.625}>
-        <Image src={teamImage} sizes={'LARGE'} />
-        <FlexBox flexFlow="column wrap" gap={0.625}>
-          <S.Title id={id}>{title}</S.Title>
-          <p>{'dm 주소'}</p>
+    <Link to={teamGetUriBuilder({ teamId: id })}>
+      <S.Container status={status}>
+        <FlexBox gap={0.625}>
+          <Image
+            src={teamImage}
+            sizes={'LARGE'}
+            boxShadow={true}
+            githubAvatarSize={GITHUB_AVATAR_SIZE_LIST.LARGE}
+            aria-hidden={true}
+          />
+          <FlexBox flexFlow="column wrap" gap={0.625}>
+            <S.Title aria-label={`팀 이름 ${title}`}>{title}</S.Title>
+          </FlexBox>
         </FlexBox>
-      </FlexBox>
-      <FlexBox flexFlow="row">
-        <S.Info>
-          <S.Notice>Where</S.Notice>
-          <S.NoticeContent>{place}</S.NoticeContent>
-        </S.Info>
-        <S.Info>
-          <S.Notice>When</S.Notice>
-          <S.NoticeContent>{startAt}</S.NoticeContent>
-        </S.Info>
-      </FlexBox>
-      <FlexBox>
-        {participants.map((participant: ParticipantType) => (
-          <Image key={participant.memberId} src={participant.profileUrl} sizes={'SMALL'} />
-        ))}
-      </FlexBox>
-    </S.Container>
+        <FlexBox flexFlow="column">
+          <S.Info>
+            <S.Notice aria-label={`인터뷰 장소 ${place}`}>
+              <S.ImageBox>
+                <Image src={locationIcon} alt={'장소 아이콘'} sizes={'TINY'} />
+              </S.ImageBox>
+              {place}
+            </S.Notice>
+          </S.Info>
+          <S.Info>
+            <S.Notice aria-label={`인터뷰 날짜와 시간 ${DateAndTime}`}>
+              {status === 'CLOSED' && (
+                <S.ImageBox>
+                  <Image src={cancelIcon} alt={'종료된 인터뷰 아이콘'} sizes={'TINY'} />
+                </S.ImageBox>
+              )}
+              {status !== 'CLOSED' && (
+                <S.ImageBox>
+                  <Image src={checkIcon} alt={'진행 중인 인터뷰 아이콘'} sizes={'TINY'} />
+                </S.ImageBox>
+              )}
+              {DateAndTime}
+            </S.Notice>
+          </S.Info>
+        </FlexBox>
+        <S.ParticipantsBox>
+          {participants.map((participant) => (
+            <S.Participants key={participant.memberId}>
+              <Image
+                src={participant.profileUrl}
+                sizes={'SMALL'}
+                githubAvatarSize={GITHUB_AVATAR_SIZE_LIST.SMALL}
+                alt={`참가자 ${participant.nickname}의 프로필 이미지`}
+              />
+            </S.Participants>
+          ))}
+        </S.ParticipantsBox>
+      </S.Container>
+    </Link>
   );
 };
 
+interface InterviewTeamsProp {
+  team: InterviewTeamType;
+}
+
 const S = {
-  Container: styled.div`
+  Container: styled.div<{ status: string }>`
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
-    width: 20.25rem;
-    min-width: 20.25rem;
+    gap: 1.25rem;
+    width: 22.6563rem;
     height: 15rem;
-    padding: 1.25rem 1.875rem 1.875rem 1.5rem;
-    border: 0.0625rem solid ${(props) => props.theme.default.BLACK};
+    padding: 1.25rem 1.5rem 1.875rem 1.5rem;
+    border-radius: 0.625rem;
+    box-shadow: 0.0625rem 0.25rem 0.625rem ${(props) => props.theme.default.GRAY};
     cursor: pointer;
   `,
 
-  Title: styled.h3`
+  Title: styled.p`
     width: 11.5rem;
+    margin-top: 0.3125rem;
+    line-height: 1.5625rem;
     word-break: break-all;
+    font-size: 1.125rem;
+    font-weight: 700;
   `,
 
   Info: styled.div`
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
-    width: 8.625rem;
-    height: 3rem;
+    justify-content: center;
+    width: 100%;
+    height: 1.4375rem;
+    margin-bottom: 0.375rem;
+    font-size: 0.875rem;
+    font-weight: 600;
   `,
 
-  Notice: styled.p`
+  Notice: styled.div`
+    display: flex;
+    align-items: center;
     color: ${(props) => props.theme.default.DARK_GRAY};
   `,
 
-  NoticeContent: styled.p`
-    font-size: 0.875rem;
+  ImageBox: styled.div`
+    margin-right: 0.75rem;
+  `,
+
+  ParticipantsBox: styled.ul`
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    gap: 0.25rem;
+    overflow-x: auto;
+    overflow-y: hidden;
+    // chrome, Safari, Opera
+    ::-webkit-scrollbar {
+      display: none;
+    }
+    // Edge
+    -ms-overflow-style: none;
+    // Firefox
+    scrollbar-width: none;
+  `,
+
+  Participants: styled.li`
+    width: 1.875rem;
+    height: 1.875rem;
   `,
 };
 

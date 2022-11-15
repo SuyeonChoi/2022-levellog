@@ -1,30 +1,28 @@
-import { Dispatch, SetStateAction } from 'react';
-
 import styled from 'styled-components';
+import { UserType } from 'types';
 
-import Image from 'components/@commons/Image';
-import { MemberType } from 'types/member';
+import { GITHUB_AVATAR_SIZE_LIST } from 'constants/constants';
 
-const Member = ({ member, setNicknameValue, updateParticipants }: MemberProps) => {
+import Image from 'components/@commons/image/Image';
+
+const Member = ({ member, addEvent }: MemberProps) => {
   const { id, nickname, profileUrl } = member;
 
   const handleClickMember = () => {
-    setNicknameValue('');
-    updateParticipants({ id, nickname, profileUrl });
+    addEvent({ id, nickname, profileUrl });
   };
 
   return (
     <S.MemberButton type={'button'} onClick={handleClickMember}>
-      <Image src={profileUrl} sizes={'SMALL'} />
+      <Image src={profileUrl} sizes={'SMALL'} githubAvatarSize={GITHUB_AVATAR_SIZE_LIST.SMALL} />
       <S.Nickname>{nickname}</S.Nickname>
     </S.MemberButton>
   );
 };
 
 interface MemberProps {
-  member: MemberType;
-  setNicknameValue: Dispatch<SetStateAction<string>>;
-  updateParticipants: ({ id, nickname, profileUrl }: MemberType) => void;
+  member: UserType;
+  addEvent: ({ id, nickname, profileUrl }: UserType) => void;
 }
 
 const S = {

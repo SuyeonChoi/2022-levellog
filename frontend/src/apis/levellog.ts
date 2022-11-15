@@ -1,54 +1,53 @@
-import axios, { AxiosPromise } from 'axios';
+import { AuthorizationHeader, fetcher } from 'apis';
 
-import { LevellogApiType, LevellogFormatType } from 'types/levellog';
+import { LevellogInfoType, LevellogType } from 'types/levellog';
 
-export const requestPostLevellog = ({
+export const requestPostLevellog = async ({
   accessToken,
   teamId,
-  levellogContent,
-}: Omit<LevellogApiType, 'levellogId'>): AxiosPromise<void> => {
-  return axios({
-    method: 'post',
-    url: `${process.env.API_URI}/teams/${teamId}/levellogs`,
-    headers: { Authorization: `Bearer ${accessToken}` },
-    data: levellogContent,
-  });
+  levellog,
+}: LevellogPostRequestType) => {
+  const levellogPostUri = `/teams/${teamId}/levellogs`;
+
+  await fetcher.post(levellogPostUri, levellog, AuthorizationHeader(accessToken));
 };
 
-export const requestGetLevellog = ({
+export const requestGetLevellog = async ({
   accessToken,
   teamId,
   levellogId,
-}: Omit<LevellogApiType, 'levellogContent'>): AxiosPromise<LevellogFormatType> => {
-  return axios({
-    method: 'get',
-    url: `${process.env.API_URI}/teams/${teamId}/levellogs/${levellogId}`,
-    headers: { Authorization: `Bearer ${accessToken}` },
-  });
+}: LevellogGetRequestType): Promise<LevellogInfoType> => {
+  const levellogGetUri = `/teams/${teamId}/levellogs/${levellogId}`;
+
+  const { data } = await fetcher.get(levellogGetUri, AuthorizationHeader(accessToken));
+
+  return data;
 };
 
-export const requestEditLevellog = ({
+export const requestEditLevellog = async ({
   accessToken,
   teamId,
   levellogId,
-  levellogContent,
-}: LevellogApiType): AxiosPromise<void> => {
-  return axios({
-    method: 'put',
-    url: `${process.env.API_URI}/teams/${teamId}/levellogs/${levellogId}`,
-    headers: { Authorization: `Bearer ${accessToken}` },
-    data: levellogContent,
-  });
+  levellog,
+}: LevellogEditRequestType) => {
+  const levellogPutUri = `/teams/${teamId}/levellogs/${levellogId}`;
+
+  await fetcher.put(levellogPutUri, levellog, AuthorizationHeader(accessToken));
 };
 
-export const requestDeleteLevellog = ({
-  accessToken,
-  teamId,
-  levellogId,
-}: Omit<LevellogApiType, 'levellogContent'>): AxiosPromise<void> => {
-  return axios({
-    method: 'delete',
-    url: `${process.env.API_URI}/teams/${teamId}/levellogs/${levellogId}`,
-    headers: { Authorization: `Bearer ${accessToken}` },
-  });
-};
+export interface LevellogRequestCommonType {
+  accessToken: string | null;
+  teamId: string | undefined;
+}
+export interface LevellogGetRequestType extends LevellogRequestCommonType {
+  levellogId: string | undefined;
+}
+
+export interface LevellogPostRequestType extends LevellogRequestCommonType {
+  levellog: LevellogType;
+}
+
+export interface LevellogEditRequestType extends LevellogRequestCommonType {
+  levellogId: string | undefined;
+  levellog: LevellogType;
+}

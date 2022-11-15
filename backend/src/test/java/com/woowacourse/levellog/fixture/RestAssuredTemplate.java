@@ -61,4 +61,21 @@ public class RestAssuredTemplate {
                 .then().log().all();
         return new RestAssuredResponse(response);
     }
+
+    public static RestAssuredResponse delete(final String url) {
+        final ValidatableResponse response = RestAssured.given().log().all()
+                .when()
+                .delete(url)
+                .then().log().all();
+        return new RestAssuredResponse(response);
+    }
+
+    public static RestAssuredResponse delete(final String url, final String token) {
+        final ValidatableResponse response = RestAssured.given().log().all()
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                .when()
+                .delete(url)
+                .then().log().all();
+        return new RestAssuredResponse(response);
+    }
 }

@@ -1,17 +1,20 @@
 package com.woowacourse.levellog.prequestion.domain;
 
+import com.woowacourse.levellog.common.support.DebugMessage;
 import com.woowacourse.levellog.levellog.domain.Levellog;
-import com.woowacourse.levellog.member.domain.Member;
-import java.util.Optional;
+import com.woowacourse.levellog.prequestion.exception.PreQuestionNotFoundException;
+import javax.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 
 public interface PreQuestionRepository extends JpaRepository<PreQuestion, Long> {
 
-    Optional<PreQuestion> findByIdAndAuthor(Long id, Member author);
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    boolean existsByLevellogAndAuthorId(Levellog levellog, Long authorId);
 
-    Optional<PreQuestion> findByLevellogAndAuthor(Levellog levellog, Member author);
-
-    Optional<PreQuestion> findByLevellogAndAuthorId(Levellog levellog, Long memberId);
-
-    boolean existsByLevellogAndAuthor(Levellog levellog, Member author);
+    default PreQuestion getPreQuestion(final Long preQuestionId) {
+        return findById(preQuestionId)
+                .orElseThrow(() -> new PreQuestionNotFoundException(DebugMessage.init()
+                        .append("preQuestionId", preQuestionId)));
+    }
 }
