@@ -22,7 +22,7 @@ public class OAuthService {
 //        final String githubAccessToken = oAuthClient.getAccessToken(code);
 //        return oAuthClient.getProfile(githubAccessToken);
         try {
-            Thread.sleep(500);
+            Thread.sleep(2000);
             return objectMapper.readValue(request.getAuthorizationCode(),
                     GithubProfileResponse.class);
         } catch (InterruptedException e) {
