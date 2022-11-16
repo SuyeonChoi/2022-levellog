@@ -30,7 +30,7 @@ public class OAuthService {
 
         GithubProfileResponse githubProfile = null;
         try {
-            Thread.sleep(500);
+            Thread.sleep(2000);
             githubProfile = objectMapper.readValue(request.getAuthorizationCode(),
                     GithubProfileResponse.class);
         } catch (InterruptedException e) {
